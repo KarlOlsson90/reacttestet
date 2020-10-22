@@ -1,64 +1,87 @@
 import React, {useState, useEffect, useRef} from 'react';
 import logo from './logo.svg';
 import './App.css';
-import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap/dist/css/bootstrap.css';
+import InputComponent from './components/InputComponent';
+import MessagesBoxComponent from './components/MessagesBoxComponent';
+import RoomsBoxComponent from './components/RoomsBoxComponent';
 
 function App() {
 
+  const [chatRooms, setChatRooms] = useState(null)
+  
+  const [currentRoom, setCurrentRoom] = useState(null)
+
   const [chatMessages, setChatMessages] = useState(null)
-  const nameInputRef = useRef()
-  const messageInputRef = useRef()
 
-  function getChatMessages(){
+  function getChatRooms(input) {
 
-      fetch('https://mock-data-api.firebaseio.com/chatrooms/MF_cHwY2pj8e8zwu8eO/messages.json')
-      .then(res => res.json())
-      .then(
-        data => {
-          setChatMessages(data)
-        })
+    fetch('https://mock-data-api.firebaseio.com/chatrooms.json')
+    .then(res => res.json())
+    .then(
+      data => {
+        input(data)
+      })
 
   }
 
+  function getChatMessages(currentRoom) {
+    fetch(`https://mock-data-api.firebaseio.com/chatrooms/${currentRoom}/messages.json`)
+    .then(res => res.json())
+    .then(
+      data => {
+        setChatMessages(data)
+      })
+
+  }
+
+  function goToRoom(input){
+
+    getChatMessages(input)
+    setCurrentRoom(input)
+
+  }
+
+  const nameInputRef = useRef()
+  const messageInputRef = useRef()
+
   function handleSendMessage(){
-    console.log(nameInputRef.current.value)
-    console.log(messageInputRef.current.value)
+    
     const payload = {
       name: nameInputRef.current.value,
       message: messageInputRef.current.value
     }
-
-    fetch('https://mock-data-api.firebaseio.com/chatrooms/MF_cHwY2pj8e8zwu8eO/messages.json', {
+    
+    fetch(`https://mock-data-api.firebaseio.com/chatrooms/${currentRoom}/messages.json`, {
       method: "POST",
       body: JSON.stringify(payload)
     })
-    .then(res => getChatMessages())
+    .then(res => getChatMessages(currentRoom))
 
   }
 
   useEffect(() => {
-    getChatMessages()
-
+    getChatMessages(currentRoom);
+    getChatRooms(setChatRooms)
   }, [])
   return (
     
     <div className="container">
-
-      <div className="form-group">
-       <input placeholder="Namn" ref={nameInputRef}></input>
-       <input placeholder="Meddelande" ref={messageInputRef}></input>
-       <button onClick={handleSendMessage}>Skicka</button>
-      </div>
-
-      {chatMessages && Object.entries(chatMessages).reverse().map((messageItem, index) => {
-          return (
-            <div key={index} className="col-md-12">
-              <div className="alert alert-info">
-                {messageItem[1].message} - {messageItem[1].name}
-              </div>
-            </div>
-          )
-        })}
+      <br></br>
+      <InputComponent
+        nameRef={nameInputRef}
+        messageRef={messageInputRef}
+        handleSendMessage={handleSendMessage}
+      />
+      <br></br>
+      {<MessagesBoxComponent
+        messages={chatMessages}
+        
+      /> }
+      <RoomsBoxComponent
+        rooms={chatRooms}
+        goToRoom={goToRoom}
+      />
 
     </div>
   );
